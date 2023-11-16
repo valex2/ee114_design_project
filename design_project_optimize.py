@@ -1,47 +1,57 @@
 import math
 
-## write a set of functions that check whether certain constraints are meant given a set of parameters.
-
-
-Vdd = 2.5 #volts
-Vss = -2.5 #volts
-Vthn = 0.5 #volts
-uCoxp = 25*10^-6
-uCoxn = 50*10^-6
+Vdd = 2.5  # volts
+Vss = -2.5  # volts
+Vthn = 0.5  # volts
+uCoxp = 25 * math.pow(10, -6)
+uCoxn = 50 * math.pow(10, -6)
 l = 0.1
 
-Iref = 100 * 10^-6 # can play with this value
+# Iref = 100 * math.pow(10, -6)  # microamps
 
+Wl1 = 2 * math.pow(10, -6)
+Ll1 = 2 * math.pow(10, -6)
+Wl2 = 2 * math.pow(10, -6)
+Ll2 = 1 * math.pow(10, -6)
 
-### not used quite yet ###
-Wl1 = 2 * 10^-6 # unchanged from spice
-Ll1 = 2 * 10^-6
-Wl2 = 2 * 10^-6
-Ll2 = 1 * 10^-6
+W1 = 2 * math.pow(10, -6)
+L1 = 1 * math.pow(10, -6)
+W2 = 2 * math.pow(10, -6)
+L2 = 1 * math.pow(10, -6)
+W3 = 2 * math.pow(10, -6)
+L3 = 1 * math.pow(10, -6)
 
-W1 = 2 * 10^-6 # unchanged from spice
-L1 = 1 * 10^-6
-W2 = 2 * 10^-6
-L2 = 1 * 10^-6
-W3 = 2 * 10^-6
-L3 = 1 * 10^-6
+Wi1 = 2 * math.pow(10, -6)
+Li1 = 2 * math.pow(10, -6)
+Wi2 = 2 * math.pow(10, -6)
+Li2 = 2 * math.pow(10, -6)
+Wi3 = 2 * math.pow(10, -6)
+Li3 = 2 * math.pow(10, -6)
 
-#### isolated device params ####
-Wi1 = 2 * 10^-6 # unchanged from spice
-Li1 = 2 * 10^-6
-Wi2 = 2 * 10^-6
-Li2 = 2 * 10^-6
-Wi3 = 2 * 10^-6
-Li3 = 2 * 10^-6
+# Wb1b = 2 * math.pow(10, -6)
+# Lb1b = 2 * math.pow(10, -6)
+# Wb2b = 2 * math.pow(10, -6)
+Lb2b = 2 * math.pow(10, -6)
+# Wb3b = 2 * math.pow(10, -6)
+Lb3b = 2 * math.pow(10, -6)
 
-Wb1b = 2 * 10^-6 # unchanged from spice
-Lb1b = 2 * 10^-6
-Wb2b = 2 * 10^-6
-Lb2b = 2 * 10^-6
-Wb3b = 2 * 10^-6
-Lb3b = 2 * 10^-6
+# Rd = 10000
+# Ru = 10000
 
-def check_constraints(Ru, Rd):
+def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b):
+    status = True
+
+    # checked
+    Vx = ((Rd/(Ru+Rd))*(Vdd-Vss)) + Vss # node x
+    if (Vx) <= -Vthn:
+        # print("M1 not in saturation")
+        status = False
+
+    Vy = (Vdd-Vthn)/3 # node y
+    if (Vy) <= (Vx-Vthn):
+        # print("M2 not in saturation")
+        status = False
+
     # currents
     i1_WL = Wi1/Li1 # this is the ratio of W/L for the current reference
     Ib1 = ((Wb1b/Lb1b)/i1_WL)*Iref # branch 1 current
@@ -52,40 +62,106 @@ def check_constraints(Ru, Rd):
     Vov1 = math.sqrt((2/uCoxn)*Iref*(Li1/Wi1))
     Vov2 = math.sqrt((2/uCoxp)*Iref2*(Li3/Wi3))
 
-    Vx = (Rd/(Ru+Rd))*(Vdd-Vss) # node x
-    Vy = (Vdd-Vthn)/3 # node y
 
-    status = True
     # saturation constraints:
-    if (Vx) <= -Vthn:
-        print("M1 not in saturation")
-        status = False
-    if (Vy) <= (Vx-Vthn):
-        print("M2 not in saturation")
-        status = False
+   
+    
     if (Vdd-Vx) <= Vov2:
-        print("Ml-1 not in saturation")
+        # print("Ml-1 not in saturation")
         status = False
     
     Vs_1 = -math.sqrt((2/uCoxn)*Ib1*(L1/W1)) - Vthn
     Vs_2 = math.sqrt(2/uCoxn*Ib2*(L2/W2)) + Vx + Vthn
     Vs_3 = Vy - Vthn - math.sqrt(2/uCoxn*Ib3*(L3/W3))
     if (Vs_1 - Vss <= Vov1):
-        print("Mbias_1 not in saturation")
+        # print("Mbias_1 not in saturation")
         status = False
     if (Vs_2 - Vss <= Vov1):
-        print("Mbias_2 not in saturation")
+        # print("Mbias_2 not in saturation")
         status = False
     if (Vs_3 - Vss <= Vov1):
-        print("Mbias_3 not in saturation")
+        # print("Mbias_3 not in saturation")
         status = False
     if (4.5 - Vov2 <+ Vov1):
-        print("Mi2 not in saturation")
+        # print("Mi2 not in saturation")
         status = False
+
+    I_total = 2*(Ib1 + Ib2 + Ib3) + Iref + Iref2 + 2*((Vdd - Vss)/(Ru + Rd))
+    P_total = (Vdd - Vss)*I_total
+    # print(f"total power {P_total} watts, total current {I_total} amps")
+    # print(f"Vov1 {Vov1} volts, Vov2 {Vov2} volts")
+    # print(f"Ib1 {Ib1} amps, Ib2 {Ib2} amps, Ib3 {Ib3} amps")
+    # print(f"Iref {Iref} amps, Iref2 {Iref2} amps")
+
+    if (P_total > 5 * math.pow(10, -3)):
+        # print("Power constraint not met")
+        status = False
+
     if (status):
         print("All constraints met")
+        # print(f"total power {P_total} watts, total current {I_total} amps")
+        # print(f"Vov1 {Vov1} volts, Vov2 {Vov2} volts")
+        # print(f"Ib1 {Ib1} amps, Ib2 {Ib2} amps, Ib3 {Ib3} amps")
+        # print(f"Iref {Iref} amps, Iref2 {Iref2} amps")
 
     return status
 
-check_constraints(10000, 10000)
-    
+
+## parameter sweeps of Wb1b, Wb2b, Wb3b and Wi1, Wi2, Wi3
+
+
+# for Wb1b in range(2, 30, 1):
+#     for Wb2b in range(2, 30, 1):
+#         for Wb3b in range(2, 30, 1):
+#             for Wi1 in range(2, 30, 1):
+#                 for Wi2 in range(2, 30, 1):
+#                     for Lb1b in range(2, 30, 1):
+#                         for Lb2b in range(2, 30, 1):
+#                             for Lb3b in range(2, 30, 1):
+#                                 Wb1b = Wb1b * math.pow(10, -6)
+#                                 Wb2b = Wb2b * math.pow(10, -6)
+#                                 Wb3b = Wb3b * math.pow(10, -6)
+#                                 Wi1 = Wi1 * math.pow(10, -6)
+#                                 Wi2 = Wi2 * math.pow(10, -6)
+#                                 Lb1b = Lb1b * math.pow(10, -6)
+#                                 Lb2b = Lb2b * math.pow(10, -6)
+#                                 Lb3b = Lb3b * math.pow(10, -6)
+#                                 status = check_constraints(Wb1b, Wb2b, Wb3b, Wi1, Wi2, Lb1b, Lb2b, Lb3b)
+#                                 Wb1b = Wb1b * math.pow(10, 6)
+#                                 Wb2b = Wb2b * math.pow(10, 6)
+#                                 Wb3b = Wb3b * math.pow(10, 6)
+#                                 Wi1 = Wi1 * math.pow(10, 6)
+#                                 Wi2 = Wi2 * math.pow(10, 6)
+#                                 Lb1b = Lb1b * math.pow(10, 6)
+#                                 Lb2b = Lb2b * math.pow(10, 6)
+#                                 Lb3b = Lb3b * math.pow(10, 6)
+#                                 if (status):
+#                                     print("Wb1b", Wb1b, "Wb2b", Wb2b, "Wb3b", Wb3b, "Wi1", Wi1, "Wi2", Wi2, "Lb1b", Lb1b, "Lb2b", Lb2b, "Lb3b", Lb3b)
+
+for Iref in range(30, 50, 1):
+    for Wb1b in range(2, 10, 1):
+        for Wb2b in range(2, 10, 1):
+            for Wb3b in range(2, 10, 1):
+                for Ru in range(1000, 10000, 1000):
+                    for Rd in range(1000, 10000, 1000):
+                        for Lb1b in range(2, 10, 1):
+                            # for Lb2b in range(2, 10, 1):
+                            #     for Lb3b in range(2, 10, 1):
+                                    Iref = Iref * math.pow(10, -6)
+                                    Wb1b = Wb1b * math.pow(10, -6)
+                                    Wb2b = Wb2b * math.pow(10, -6)
+                                    Wb3b = Wb3b * math.pow(10, -6)
+                                    Lb1b = Lb1b * math.pow(10, -6)
+                                    # Lb2b = Lb2b * math.pow(10, -6)
+                                    # Lb3b = Lb3b * math.pow(10, -6)
+                                    status = check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b)
+                                    Iref = Iref * math.pow(10, 6)
+                                    Wb1b = Wb1b * math.pow(10, 6)
+                                    Wb2b = Wb2b * math.pow(10, 6)
+                                    Wb3b = Wb3b * math.pow(10, 6)
+                                    Lb1b = Lb1b * math.pow(10, 6)
+                                    # Lb2b = Lb2b * math.pow(10, 6)
+                                    # Lb3b = Lb3b * math.pow(10, 6)
+                                    if (status):
+                                        print("Iref", Iref, "Wb1b", Wb1b, "Wb2b", Wb2b, "Wb3b", Wb3b, "Ru", Ru, "Rd", Rd, "Lb1b", Lb1b, "Lb2b")
+        
