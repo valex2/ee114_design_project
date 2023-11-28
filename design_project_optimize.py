@@ -14,11 +14,11 @@ Ll1 = 2 * math.pow(10, -6)
 Wl2 = 2 * math.pow(10, -6)
 Ll2 = 1 * math.pow(10, -6)
 
-W1 = 2 * math.pow(10, -6)
+# W1 = 2 * math.pow(10, -6)
 L1 = 1 * math.pow(10, -6)
-W2 = 2 * math.pow(10, -6)
+# W2 = 2 * math.pow(10, -6)
 L2 = 1 * math.pow(10, -6)
-W3 = 2 * math.pow(10, -6)
+# W3 = 2 * math.pow(10, -6)
 L3 = 1 * math.pow(10, -6)
 
 Wi1 = 2 * math.pow(10, -6)
@@ -31,14 +31,15 @@ Li3 = 2 * math.pow(10, -6)
 # Wb1b = 2 * math.pow(10, -6)
 # Lb1b = 2 * math.pow(10, -6)
 # Wb2b = 2 * math.pow(10, -6)
-Lb2b = 2 * math.pow(10, -6)
+# Lb2b = 2 * math.pow(10, -6)
 # Wb3b = 2 * math.pow(10, -6)
-Lb3b = 2 * math.pow(10, -6)
+# Lb3b = 2 * math.pow(10, -6)
 
 # Rd = 10000
 # Ru = 10000
+Rl = 20000
 
-def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b):
+def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, W3):
     status = True
 
     # checked
@@ -62,6 +63,22 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b):
     Vov1 = math.sqrt((2/uCoxn)*Iref*(Li1/Wi1))
     Vov2 = math.sqrt((2/uCoxp)*Iref2*(Li3/Wi3))
 
+
+    # gain constraints
+    muCox = math.pow(50, -6)
+    gm2 = math.sqrt(2*Ib2*muCox*W2/L2)
+    gml2 = math.sqrt(2*Ib2*muCox*Wl2/Ll2)
+    gm3 = math.sqrt(2*Ib3*muCox*W3/L3)
+    gmb3 = math.sqrt(2*Ib3*muCox*Wb3b/Lb3b)
+
+    cg_gain = Ru*Rd/(Ru+Rd)
+    cs_gain = gm2/gml2 # scale W2 to increase gain of this term
+    cd_gain = gm3/(gm3 + 1/(((Rl/2)*(1/gmb3))/((Rl/2)+(1/gmb3))))
+    gain = cg_gain*cs_gain*cd_gain
+
+    if gain < 10000:
+        #print("Gain constraint not met")
+        status = False
 
     # saturation constraints:
    
@@ -109,59 +126,36 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b):
 
 ## parameter sweeps of Wb1b, Wb2b, Wb3b and Wi1, Wi2, Wi3
 
+Iref = 30 * math.pow(10, -6)
+Ru = 6000
+Rd = 9000
+Lb1b = 4 * math.pow(10, -6)
+Wb2b = 5 * math.pow(10, -6)
 
-# for Wb1b in range(2, 30, 1):
-#     for Wb2b in range(2, 30, 1):
-#         for Wb3b in range(2, 30, 1):
-#             for Wi1 in range(2, 30, 1):
-#                 for Wi2 in range(2, 30, 1):
-#                     for Lb1b in range(2, 30, 1):
-#                         for Lb2b in range(2, 30, 1):
-#                             for Lb3b in range(2, 30, 1):
-#                                 Wb1b = Wb1b * math.pow(10, -6)
-#                                 Wb2b = Wb2b * math.pow(10, -6)
-#                                 Wb3b = Wb3b * math.pow(10, -6)
-#                                 Wi1 = Wi1 * math.pow(10, -6)
-#                                 Wi2 = Wi2 * math.pow(10, -6)
-#                                 Lb1b = Lb1b * math.pow(10, -6)
-#                                 Lb2b = Lb2b * math.pow(10, -6)
-#                                 Lb3b = Lb3b * math.pow(10, -6)
-#                                 status = check_constraints(Wb1b, Wb2b, Wb3b, Wi1, Wi2, Lb1b, Lb2b, Lb3b)
-#                                 Wb1b = Wb1b * math.pow(10, 6)
-#                                 Wb2b = Wb2b * math.pow(10, 6)
-#                                 Wb3b = Wb3b * math.pow(10, 6)
-#                                 Wi1 = Wi1 * math.pow(10, 6)
-#                                 Wi2 = Wi2 * math.pow(10, 6)
-#                                 Lb1b = Lb1b * math.pow(10, 6)
-#                                 Lb2b = Lb2b * math.pow(10, 6)
-#                                 Lb3b = Lb3b * math.pow(10, 6)
-#                                 if (status):
-#                                     print("Wb1b", Wb1b, "Wb2b", Wb2b, "Wb3b", Wb3b, "Wi1", Wi1, "Wi2", Wi2, "Lb1b", Lb1b, "Lb2b", Lb2b, "Lb3b", Lb3b)
+for Wb1b in range(2, 10, 1):
+    for Wb3b in range(2, 10, 1):
+        for Lb2b in range(2, 10, 1):
+            for Lb3b in range(2, 10, 1):
+                for W1 in range(2, 10, 1):
+                    for W2 in range(2, 10, 1):
+                        for W3 in range(2, 10, 1):
+                            Wb1b = Wb1b * math.pow(10, -6)
+                            Wb3b = Wb3b * math.pow(10, -6)
+                            Lb2b = Lb2b * math.pow(10, -6)
+                            Lb3b = Lb3b * math.pow(10, -6)
+                            W1 = W1 * math.pow(10, -6)
+                            W2 = W2 * math.pow(10, -6)
+                            W3 = W3 * math.pow(10, -6)
 
-for Iref in range(30, 50, 1):
-    for Wb1b in range(2, 10, 1):
-        for Wb2b in range(2, 10, 1):
-            for Wb3b in range(2, 10, 1):
-                for Ru in range(1000, 10000, 1000):
-                    for Rd in range(1000, 10000, 1000):
-                        for Lb1b in range(2, 10, 1):
-                            # for Lb2b in range(2, 10, 1):
-                            #     for Lb3b in range(2, 10, 1):
-                                    Iref = Iref * math.pow(10, -6)
-                                    Wb1b = Wb1b * math.pow(10, -6)
-                                    Wb2b = Wb2b * math.pow(10, -6)
-                                    Wb3b = Wb3b * math.pow(10, -6)
-                                    Lb1b = Lb1b * math.pow(10, -6)
-                                    # Lb2b = Lb2b * math.pow(10, -6)
-                                    # Lb3b = Lb3b * math.pow(10, -6)
-                                    status = check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b)
-                                    Iref = Iref * math.pow(10, 6)
-                                    Wb1b = Wb1b * math.pow(10, 6)
-                                    Wb2b = Wb2b * math.pow(10, 6)
-                                    Wb3b = Wb3b * math.pow(10, 6)
-                                    Lb1b = Lb1b * math.pow(10, 6)
-                                    # Lb2b = Lb2b * math.pow(10, 6)
-                                    # Lb3b = Lb3b * math.pow(10, 6)
-                                    if (status):
-                                        print("Iref", Iref, "Wb1b", Wb1b, "Wb2b", Wb2b, "Wb3b", Wb3b, "Ru", Ru, "Rd", Rd, "Lb1b", Lb1b, "Lb2b")
-        
+                            status = check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, W3)
+
+                            Wb1b = Wb1b * math.pow(10, 6)
+                            Wb3b = Wb3b * math.pow(10, 6)
+                            Lb2b = Lb2b * math.pow(10, 6)
+                            Lb3b = Lb3b * math.pow(10, 6)
+                            W1 = W1 * math.pow(10, 6)
+                            W2 = W2 * math.pow(10, 6)
+                            W3 = W3 * math.pow(10, 6)
+
+                            if (status):
+                                print("Wb1b: ", Wb1b, "Wb2b: ", Wb2b, "Wb3b: ", Wb3b, "Lb1b: ", Lb1b, "Lb2b: ", Lb2b, "Lb3b: ", Lb3b)
