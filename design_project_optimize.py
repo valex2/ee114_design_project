@@ -84,23 +84,49 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, 
     # print(f"Ib1 {Ib1} amps, Ib2 {Ib2} amps, Ib3 {Ib3} amps")
     # print(f"Iref {Iref} amps, Iref2 {Iref2} amps")
 
-    if (P_total > 2 * math.pow(10, -3)):
-        print(f"power {P_total} watts not met")
+    p_overshoot = 0.95
+    if (P_total > 2 * p_overshoot * math.pow(10, -3)):
+        # print(f"power {P_total} watts not met")
         # print("Power constraint not met")
         status = False
 
-
-
-
     # bandwidth constraints
-    # fudge_factor = 1.4 # determined based on observe difference between hand-calcs and spice sim
-    # Rt_out = Rl/2 # we ignore ro (assume it's large)
-    # Req_out = 1/(gm3 + 1/Rt_out)
-    # Cgdb3
-    # Ceq_out = 2*Cl
+    fudge_factor = 1.4 # determined based on observe difference between hand-calcs and spice sim
 
+    gm1 = math.sqrt(2*Ib1*muCox*W1/L1)
+    gmb1 = 0.2 * gm1
+    rob1 = 1/(0.1 * Ib1)
+    ro1 = 1/(0.1 * Ib1)
+    roL1 = 1/(0.1 * Ib1)
+    ro3 = 1/(0.1 * Ib3)
+    rob3 = 1/(0.1 * Ib3)
 
+    Cov = 0.5 * math.pow(10, -15)
+    Cox = 2.3 * math.pow(10, -15)
+    Cgs1 = 2/3*W1*L1*Cox + Cov
+    Cgdb3 = Cov
+    Cgdb1 = Cov
 
+    #Tau 6
+    Cin = 100 * math.pow(10, -15)
+    Req_6 = 1/(1/ro3 + 1/rob3 + 1/(2*Rl))
+    R_6 = 1/(gm3 + 1/Req_6)
+    Ceq_6 = 2*Cl+Cgdb3
+    Tau6 = R_6*Ceq_6
+    #Tau 1
+    Req_1 = 1/(1/Ru + 1/Rd + 1/roL1)
+    R_1 = 1/(1/rob1 + (gm1+gmb1)*ro1/(ro1+Req_1) + 1/(ro1 + Req_1))
+    Ceq_1 = Cin + Cgs1 + Cgdb1
+    Tau1 = R_1*Ceq_1
+    BW = 1/(Tau1 + Tau6)
+    BW_fudge = BW * fudge_factor
+
+    overshoot = 1.6 # determined based on observed difference between hand-calcs and spice sim
+    if (BW_fudge < 600 * overshoot * math.pow(10, 6)):
+        status = False
+        # print(f"bandwidth {BW_fudge} Hz")
+
+    # saturation constraints:
     Vx = ((Rd/(Ru+Rd))*(Vdd-Vss)) + Vss # node x
     if (Vx) <= -Vthn: 
         # print("M1 not in saturation")
@@ -113,11 +139,6 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, 
 
     Vov1 = math.sqrt((2/uCoxn)*Iref*(Li1/Wi1))
     Vov2 = math.sqrt((2/uCoxp)*Iref2*(Li3/Wi3))
-
-    
-
-    # saturation constraints:
-   
     
     if (Vdd-Vx) <= Vov2:
         # print("Ml-1 not in saturation")
@@ -139,8 +160,6 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, 
         # print("Mi2 not in saturation")
         status = False
 
-    
-
     if (status):
         print("All constraints met")
         # print(f"total power {P_total} watts, total current {I_total} amps")
@@ -153,7 +172,7 @@ def check_constraints(Iref, Wb1b, Wb2b, Wb3b, Ru, Rd, Lb1b, Lb2b, Lb3b, W1, W2, 
 
 ## parameter sweeps of Wb1b, Wb2b, Wb3b and Wi1, Wi2, Wi3
 
-Iref = 30 * math.pow(10, -6)
+Iref = 40 * math.pow(10, -6)
 # Ru = 6000
 # Rd = 9000
 # Lb1b = 4 * math.pow(10, -6)
@@ -164,17 +183,17 @@ Iref = 30 * math.pow(10, -6)
 # make the following for loop include tqdm
 
 
-for Ru in tqdm(range(30000, 40000, 1000)):
-    for Rd in range(30000, 40000, 1000):
-        for Wb1b in range(2, 10, 1):
-            for Wb2b in range(2, 10, 1):
-                for Wb3b in range(2, 10, 1):
-                    for Lb1b in range(2, 10, 1):
-                        for Lb2b in range(2, 10, 1):
-                            for Lb3b in range(2, 10, 1):
-                                for W1 in range(10, 20, 1):
-                                    for W2 in range(10, 20, 1):
-                                        for W3 in range(10, 20, 1):
+for Ru in tqdm(range(40000, 70000, 5000)):
+    for Rd in range(40000, 70000, 5000):
+        for Wb1b in range(2, 10, 2):
+            for Wb2b in range(2, 10, 2):
+                for Wb3b in range(2, 10, 2):
+                    for Lb1b in range(5, 10, 1):
+                        for Lb2b in range(5, 10, 1):
+                            for Lb3b in range(5, 10, 1):
+                                for W1 in range(10, 15, 1):
+                                    for W2 in range(10, 15, 1):
+                                        for W3 in range(10, 30, 1):
                                             Wb1b = Wb1b * math.pow(10, -6)
                                             Wb2b = Wb2b * math.pow(10, -6)
                                             Wb3b = Wb3b * math.pow(10, -6)
